@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from bing_image_downloader import downloader
+from bing_image_downloader import downloader # type: ignore
 import os
 
 app = Flask(__name__)
