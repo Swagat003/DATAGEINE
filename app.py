@@ -1,14 +1,16 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from bing_image_downloader import downloader  # type: ignore
 import os
 import shutil
+import threading
+import time
 
 app = Flask(__name__)
 
 @app.route('/download_images', methods=['GET'])
 def download_images():
     dataset_name = request.args.get('dataset_name')
-    classes = request.args.get('classes')  
+    classes = request.args.get('classes')  # Comma-separated list of classes
     limit = request.args.get('limit', default=5, type=int)
 
     if not dataset_name or not classes:
@@ -29,10 +31,37 @@ def download_images():
         except Exception as e:
             return jsonify({'error': f'Error downloading images for class "{cls}": {str(e)}'}), 500
 
-    return jsonify({'message': f'Downloaded images for classes: {class_list} in dataset "{dataset_name}".'}), 200
+    zip_file_path = shutil.make_archive(output_dir, 'zip', output_dir)
+    shutil.rmtree(output_dir)
+    
+    zip_file_name = os.path.basename(zip_file_path)
+
+    threading.Thread(target=delete_file_after_delay, args=(zip_file_path, 60)).start()
+
+    return jsonify({'message': f'Downloaded image dataset "{dataset_name}" for classes: {class_list} in 60 sec.', 'path': f'/download_zip/{zip_file_name}', 'download_link': f'http://127.0.0.1:5000/download_zip/{zip_file_name}'}), 200
+
+@app.route('/download_zip/<path:filename>', methods=['GET'])
+def download_zip(filename):
+    directory = os.path.join(app.root_path, 'datasets')
+    file_path = os.path.join(directory, filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'The requested zip file has been removed from the server.'}), 404
+
+    return send_from_directory(directory=directory, path=filename, as_attachment=True)
+
+def delete_file_after_delay(file_path, delay):
+    """Delete the file after a specified delay."""
+    time.sleep(delay)
+    try:
+        os.remove(file_path)
+        print(f"Deleted file: {file_path}")
+    except Exception as e:
+        print(f"Error deleting file: {str(e)}")
 
 if __name__ == '__main__':
     app.run(debug=True)
 
 # Example Test URL: 
 # http://127.0.0.1:5000/download_images?dataset_name=animal_images&classes=dog,cat,horse&limit=10
+# http://127.0.0.1:5000/download_zip/animal_images.zip
