@@ -6,8 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
-# Ignore the myenv virtual environment
 myenv/
+datasets/
 
 # Distribution / packaging
 .Python
