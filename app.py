@@ -62,17 +62,19 @@ def download_images():
         try:
             response = model.generate_content(template.format(dataset_name=dataset_name, class_name=cls))
             query = response.text.strip()
-
             if query.lower() == cls.lower():  
                 query = cls  
-
             downloader.download(query, limit=limit, output_dir=output_dir, adult_filter_off=True, force_replace=False, timeout=60)
             old_dir = os.path.join(output_dir, query)
             new_dir = os.path.join(output_dir, cls)
             os.rename(old_dir, new_dir)
 
         except Exception as e:
-            return jsonify({'error': f'Error downloading images for class "{cls}": {str(e)}'}), 500
+            try:
+                downloader.download(cls, limit=limit, output_dir=output_dir, adult_filter_off=True, force_replace=False, timeout=60)
+            except Exception as e:
+                shutil.rmtree(base_output_dir)
+                return jsonify({'error': f'Error downloading images for class "{cls}": {str(e)}'}), 500
 
     zip_file_path = shutil.make_archive(output_dir, 'zip', output_dir)
     shutil.rmtree(output_dir)
