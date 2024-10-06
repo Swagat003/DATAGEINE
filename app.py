@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from bing_image_downloader import downloader  # type: ignore
 import os
+from dotenv import load_dotenv
 import shutil
 import uuid
 from apscheduler.schedulers.background import BackgroundScheduler # type: ignore
@@ -15,6 +16,10 @@ os.makedirs(DATASETS_DIR, exist_ok=True)
 folder_expiry_times = {}
 
 scheduler = BackgroundScheduler()
+
+load_dotenv()
+
+api_key = os.getenv('GEMINI_API_KEY')
 
 @app.route('/download_images', methods=['GET'])
 def download_images():
