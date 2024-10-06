@@ -86,7 +86,7 @@ def download_images():
     return jsonify({
         'message': f'Downloaded image dataset "{dataset_name}" for classes: {class_list} in 60 sec.',
         'path': f'/download_zip/{unique_id}/{zip_file_name}',
-        'download_link': f'http://127.0.0.1:5000/download_zip/{unique_id}/{zip_file_name}'
+        'download_link': f'https://image-dataset-creator.onrender.com/download_zip/{unique_id}/{zip_file_name}'
     }), 200
 
 
@@ -124,5 +124,6 @@ if __name__ == '__main__':
 
 
 # Example Test URL: 
+# https://image-dataset-creator.onrender.com/download_images?dataset_name=animal_images&classes=dog,cat,horse&limit=2
 # http://127.0.0.1:5000/download_images?dataset_name=animal_images&classes=dog,cat,horse&limit=10
 # http://192.168.29.169:5000/download_images?dataset_name=animal_images&classes=dog,cat,horse&limit=5
