@@ -6,6 +6,8 @@ import shutil
 import uuid
 from apscheduler.schedulers.background import BackgroundScheduler # type: ignore
 import time
+import google.generativeai as genai # type: ignore
+
 
 app = Flask(__name__)
 
@@ -18,8 +20,26 @@ folder_expiry_times = {}
 scheduler = BackgroundScheduler()
 
 load_dotenv()
-
 api_key = os.getenv('GEMINI_API_KEY')
+
+genai.configure(api_key=api_key)
+
+template = '''Given the dataset name and class name below, provide a refined search query that will result in specific, relevant images while avoiding unrelated content. If the generated query violates any policy, return only the given same class name.
+
+Dataset Name: {dataset_name}
+Class Name: {class_name}
+
+The refined search query should:
+
+1. Ensure the images match the intended category more specifically.
+2. Exclude unrelated images such as logos, cartoons, emojis, illustrations, and objects not related to human subjects.
+3. Include keywords like 'real person', 'authentic', 'natural', 'photo', 'realistic', etc. if appropriate.
+
+For instance, if the dataset name is 'emotions' and the class name is 'sad', the refined query could be: 'sad person, facial expression, human emotion, realistic, real person -logo -cartoon -emoji -illustration -stock'.
+
+Generate a refined search query for the given dataset and class name.
+'''
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 @app.route('/download_images', methods=['GET'])
 def download_images():
@@ -40,7 +60,17 @@ def download_images():
 
     for cls in class_list:
         try:
-            downloader.download(cls, limit=limit, output_dir=output_dir, adult_filter_off=True, force_replace=False, timeout=60)
+            response = model.generate_content(template.format(dataset_name=dataset_name, class_name=cls))
+            query = response.text.strip()
+
+            if query.lower() == cls.lower():  
+                query = cls  
+
+            downloader.download(query, limit=limit, output_dir=output_dir, adult_filter_off=True, force_replace=False, timeout=60)
+            old_dir = os.path.join(output_dir, query)
+            new_dir = os.path.join(output_dir, cls)
+            os.rename(old_dir, new_dir)
+
         except Exception as e:
             return jsonify({'error': f'Error downloading images for class "{cls}": {str(e)}'}), 500
 
@@ -56,6 +86,7 @@ def download_images():
         'path': f'/download_zip/{unique_id}/{zip_file_name}',
         'download_link': f'http://127.0.0.1:5000/download_zip/{unique_id}/{zip_file_name}'
     }), 200
+
 
 @app.route('/download_zip/<unique_id>/<path:filename>', methods=['GET'])
 def download_zip(unique_id, filename):
