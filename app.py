@@ -89,7 +89,7 @@ def download_images():
     return jsonify({
         'message': f'Downloaded image dataset "{dataset_name}" for classes: {class_list} in 60 sec.',
         'path': f'/download_zip/{unique_id}/{zip_file_name}',
-        'download_link': request.host_url + f'download_zip/{unique_id}/{zip_file_name}'
+        'download_link': request.host_url.replace("http://", "https://") + f'download_zip/{unique_id}/{zip_file_name}'
     }), 200
 
 
