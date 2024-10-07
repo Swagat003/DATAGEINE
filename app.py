@@ -33,7 +33,7 @@ The refined search query should:
 
 1. Ensure the images match the intended category more specifically.
 2. Exclude unrelated images such as logos, cartoons, emojis, illustrations, and objects not related to human subjects.
-3. Include keywords like 'real person', 'authentic', 'natural', 'photo', 'realistic', etc. if appropriate.
+3. Include keywords like 'real person', 'authentic', 'natural', 'photo', 'realistic', 'single', etc. if appropriate.
 
 For instance, if the dataset name is 'emotions' and the class name is 'sad', the refined query could be: 'sad person, facial expression, human emotion, realistic, real person -logo -cartoon -emoji -illustration -stock'.
 
