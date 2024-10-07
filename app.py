@@ -52,7 +52,7 @@ def download_images():
 
     unique_id = str(uuid.uuid4())
     base_output_dir = os.path.join(DATASETS_DIR, unique_id)
-    output_dir = os.path.join(base_output_dir, dataset_name)
+    output_dir = os.path.join(base_output_dir, dataset_name.replace(' ', '_'))
 
     os.makedirs(output_dir)
 
@@ -76,8 +76,11 @@ def download_images():
                 shutil.rmtree(base_output_dir)
                 return jsonify({'error': f'Error downloading images for class "{cls}": {str(e)}'}), 500
 
-    zip_file_path = shutil.make_archive(output_dir, 'zip', output_dir)
-    shutil.rmtree(output_dir)
+    try:
+        zip_file_path = shutil.make_archive(output_dir, 'zip', output_dir)
+    finally:
+        shutil.rmtree(output_dir)
+
 
     folder_expiry_times[unique_id] = time.time() + 60
 
@@ -86,7 +89,7 @@ def download_images():
     return jsonify({
         'message': f'Downloaded image dataset "{dataset_name}" for classes: {class_list} in 60 sec.',
         'path': f'/download_zip/{unique_id}/{zip_file_name}',
-        'download_link': f'https://image-dataset-creator.onrender.com/download_zip/{unique_id}/{zip_file_name}'
+        'download_link': request.host_url + f'download_zip/{unique_id}/{zip_file_name}'
     }), 200
 
 
