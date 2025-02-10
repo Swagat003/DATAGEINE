@@ -7,22 +7,15 @@ from dotenv import load_dotenv
 import google.generativeai as genai  # type: ignore
 from bing_image_downloader import downloader  # type: ignore
 
-# --------------------------
-# Environment & Global Setup
-# --------------------------
-
-# Load environment variables (make sure you have a .env file with GEMINI_API_KEY set)
 load_dotenv()
 api_key = os.getenv('GEMINI_API_KEY')
 if not api_key:
     st.error("GEMINI_API_KEY is not set in the environment variables.")
 genai.configure(api_key=api_key)
 
-# Create a simple datasets directory if not present.
 DATASETS_DIR = 'datasets'
 os.makedirs(DATASETS_DIR, exist_ok=True)
 
-# The prompt template for generating refined search queries.
 template = '''Given the dataset name and class name below, provide a refined search query that will result in specific, relevant images while avoiding unrelated content. If the generated query violates any policy, return only the given same class name.
 
 Dataset Name: {dataset_name}
@@ -39,12 +32,9 @@ For instance, if the dataset name is 'emotions' and the class name is 'sad', the
 Generate a refined search query for the given dataset and class name.
 '''
 
-# Initialize the Generative AI model.
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# -----------------------------------------
-# Helper Function to Process the Request
-# -----------------------------------------
+
 
 def process_download(dataset_name: str, classes: str, limit: int) -> bytes:
     """
@@ -58,18 +48,15 @@ def process_download(dataset_name: str, classes: str, limit: int) -> bytes:
     output_dir = os.path.join(base_output_dir, dataset_dir_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Create a list of classes from comma separated values.
     class_list = [cls.strip() for cls in classes.split(',') if cls.strip()]
 
     for cls in class_list:
         try:
-            # Generate a refined search query using the AI model.
             prompt = template.format(dataset_name=dataset_name, class_name=cls)
             response = model.generate_content(prompt)
             query = response.text.strip()
             if query.lower() == cls.lower():
                 query = cls
-            # Download images based on the refined query.
             downloader.download(
                 query,
                 limit=limit,
@@ -78,13 +65,11 @@ def process_download(dataset_name: str, classes: str, limit: int) -> bytes:
                 force_replace=False,
                 timeout=60
             )
-            # Rename the folder from the refined query name to the original class name.
             old_dir = os.path.join(output_dir, query)
             new_dir = os.path.join(output_dir, cls)
             if os.path.exists(old_dir):
                 os.rename(old_dir, new_dir)
         except Exception as e:
-            # Fallback: if refined query fails, try downloading using the class name directly.
             try:
                 downloader.download(
                     cls,
@@ -98,23 +83,18 @@ def process_download(dataset_name: str, classes: str, limit: int) -> bytes:
                 shutil.rmtree(base_output_dir)
                 raise Exception(f"Error downloading images for class '{cls}': {str(inner_e)}")
     
-    # Create a zip archive of the dataset folder.
     try:
-        # This creates a zip file at: <output_dir>.zip
         zip_file_path = shutil.make_archive(output_dir, 'zip', output_dir)
     except Exception as e:
         shutil.rmtree(base_output_dir)
         raise Exception("Error creating zip archive: " + str(e))
     finally:
-        # Remove the images folder since the zip file now contains the data.
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
 
-    # Read the zip archive as bytes.
     with open(zip_file_path, "rb") as f:
         zip_bytes = f.read()
 
-    # Remove the zip file from disk now that we have its bytes.
     if os.path.exists(zip_file_path):
         os.remove(zip_file_path)
     if os.path.exists(base_output_dir):
@@ -125,9 +105,7 @@ def process_download(dataset_name: str, classes: str, limit: int) -> bytes:
 
     return zip_bytes
 
-# -------------------------------
-# Streamlit User Interface (UI)
-# -------------------------------
+
 
 st.set_page_config(page_title="Image Dataset Creator", layout="wide")
 st.title("📸 Image Dataset Creator")
@@ -143,14 +121,12 @@ st.markdown(
     """
 )
 
-# Create a form for user inputs.
 with st.form("dataset_form"):
     dataset_name = st.text_input("Dataset Name", placeholder="e.g., animal_images")
     classes = st.text_input("Classes (comma separated)", placeholder="e.g., dog, cat, horse")
     limit = st.number_input("Number of Images per Class", min_value=1, value=5, step=1)
     submitted = st.form_submit_button("Download Images")
 
-# Process the form submission.
 if submitted:
     if not dataset_name or not classes:
         st.error("Please provide both the dataset name and the classes.")
